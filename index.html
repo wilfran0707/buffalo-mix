@@ -230,12 +230,12 @@
           <div class="pt-2">
             <div class="flex items-center justify-between text-[11px] text-[#E7CEB0]/80 font-medium mb-2">
               <span>Selecciona cómo deseas usar la carta hoy:</span>
-              <span class="hidden sm:inline font-bold text-[#E7CEB0]" data-mode-badge>Modo: Sacar Cuenta</span>
+              <span class="hidden sm:inline font-bold text-[#E7CEB0]" data-mode-badge>Modo: Mi Cuenta / Mesa</span>
             </div>
             <div class="grid grid-cols-3 gap-2 bg-[#1D0E06]/70 p-1.5 rounded-2xl border border-[#E7CEB0]/20 max-w-lg">
               <button type="button" data-mode="cuenta" class="mode-btn touch-btn py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
                 <span data-icon="receipt" data-size="w-4 h-4 shrink-0"></span>
-                <span>Mi Cuenta</span>
+                <span>En Mesa / Cuenta</span>
               </button>
               <button type="button" data-mode="domicilio" class="mode-btn touch-btn py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
                 <span data-icon="delivery" data-size="w-4 h-4 shrink-0"></span>
@@ -831,6 +831,7 @@
 
     let formState = {
       custName: '',
+      custTable: '',
       custAddress: '',
       custPayment: 'Transferencia QR Bre-B / Bancolombia',
       packaging: true
@@ -1236,17 +1237,21 @@
       }
 
       const modeMap = {
-        cuenta: 'RESUMEN DE CUENTA',
+        cuenta: 'PEDIDO EN MESA / LOCAL 314',
         domicilio: 'PEDIDO A DOMICILIO (Barrancabermeja)',
         recoger: 'PEDIDO PARA RECOGER EN LOCAL 314'
       };
 
       const name = formState.custName.trim() || 'Cliente';
+      const table = formState.custTable.trim() || 'Por confirmar en mesa';
       const address = formState.custAddress.trim() || 'Dirección por confirmar';
 
       let lines = [`*BUFFALO GOURMET — ${modeMap[orderMode]}*`];
 
-      if (orderMode === 'domicilio') {
+      if (orderMode === 'cuenta') {
+        lines.push(`*Cliente:* ${name}`);
+        lines.push(`*Mesa:* ${table}`);
+      } else if (orderMode === 'domicilio') {
         lines.push(`*Cliente:* ${name}`);
         lines.push(`*Dirección:* ${address}`);
       } else if (orderMode === 'recoger') {
@@ -1267,9 +1272,7 @@
       }
 
       lines.push('--------------------------');
-      if (orderMode !== 'cuenta') {
-        lines.push(`*Pago:* ${formState.custPayment}`);
-      }
+      lines.push(`*Pago:* ${formState.custPayment}`);
       lines.push(`*TOTAL CUENTA: ${formatCOP(total)}*`);
       return lines.join('\n');
     }
@@ -1277,7 +1280,7 @@
     function buildCartPanelMarkup() {
       const { itemsCount, packagingCost, total } = getCartTotals();
       const helpers = {
-        cuenta: 'Modo <strong>Sacar Cuenta</strong>: calcula el valor exacto antes de pedir o pagar en caja.',
+        cuenta: 'Modo <strong>Cuenta / Mesa</strong>: calcula tu cuenta o envía tu pedido directo desde mesa por WhatsApp.',
         domicilio: 'Modo <strong>Domicilio</strong>: ingresa tu dirección en Barrancabermeja y envíanos tu pedido.',
         recoger: 'Modo <strong>Para Recoger</strong>: alístalo y pasa por el Local 314 (C.C. San Silvestre).'
       };
@@ -1315,7 +1318,31 @@
           </div>
         `).join('');
 
-      const formHtml = orderMode === 'cuenta' ? '' : `
+      const formHtml = orderMode === 'cuenta' ? `
+        <div class="rounded-2xl bg-[#FAF3E8] border border-[#E2C8A8] p-3.5 space-y-2.5">
+          <div class="text-[11px] font-extrabold uppercase tracking-wider text-[#734424]">Datos para Pedir desde Mesa</div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-[#5D371D] mb-1">Tu Nombre:</label>
+              <input data-form-field="custName" value="${formState.custName.replace(/"/g, '&quot;')}" type="text" placeholder="Ej: Carlos" class="w-full px-3 py-2 rounded-xl bg-white border border-[#D8B994] text-xs text-[#2B160A] focus:outline-none focus:border-[#734424]" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-[#5D371D] mb-1">N.° de Mesa:</label>
+              <input data-form-field="custTable" value="${formState.custTable.replace(/"/g, '&quot;')}" type="text" placeholder="Ej: Mesa 4" class="w-full px-3 py-2 rounded-xl bg-white border border-[#D8B994] text-xs text-[#2B160A] focus:outline-none focus:border-[#734424]" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-[#5D371D] mb-1">Método de Pago:</label>
+            <select data-form-field="custPayment" class="w-full px-3 py-2 rounded-xl bg-white border border-[#D8B994] text-xs text-[#2B160A]">
+              <option value="Transferencia QR Bre-B / Bancolombia" ${formState.custPayment === 'Transferencia QR Bre-B / Bancolombia' ? 'selected' : ''}>Transferencia QR Bre-B / Bancolombia</option>
+              <option value="Efectivo" ${formState.custPayment === 'Efectivo' ? 'selected' : ''}>Efectivo</option>
+              <option value="Datáfono / Tarjeta" ${formState.custPayment === 'Datáfono / Tarjeta' ? 'selected' : ''}>Datáfono / Tarjeta</option>
+            </select>
+          </div>
+        </div>
+      ` : `
         <div class="rounded-2xl bg-[#FAF3E8] border border-[#E2C8A8] p-3.5 space-y-2.5">
           <div class="text-[11px] font-extrabold uppercase tracking-wider text-[#734424]">Datos de tu Pedido</div>
 
@@ -1352,7 +1379,7 @@
         </div>
       `;
 
-      const waBoxHtml = (orderMode === 'cuenta' || cart.length === 0) ? '' : `
+      const waBoxHtml = cart.length === 0 ? '' : `
         <div class="rounded-2xl bg-[#2E6F40]/8 border border-[#2E6F40]/25 p-3 space-y-1.5">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-extrabold text-[#2E6F40] flex items-center gap-1">
@@ -1441,12 +1468,10 @@
               ${iconSvg('qr', 'w-4 h-4')}
               <span>Ver QR y Datos Bancarios</span>
             </button>
-            ${orderMode !== 'cuenta' ? `
-              <button type="button" data-send-whatsapp class="touch-btn w-full py-2.5 rounded-xl font-extrabold text-xs bg-[#2E6F40] hover:bg-[#235732] text-white shadow flex items-center justify-center gap-2 transition">
-                ${iconSvg('whatsapp', 'w-4 h-4')}
-                <span>Enviar Pedido por WhatsApp</span>
-              </button>
-            ` : ''}
+            <button type="button" data-send-whatsapp class="touch-btn w-full py-2.5 rounded-xl font-extrabold text-xs bg-[#2E6F40] hover:bg-[#235732] text-white shadow flex items-center justify-center gap-2 transition">
+              ${iconSvg('whatsapp', 'w-4 h-4')}
+              <span>Enviar Pedido por WhatsApp</span>
+            </button>
           </div>
         </div>
       `;
@@ -1511,6 +1536,10 @@
           return;
         }
         if (e.target.closest('[data-send-whatsapp]')) {
+          if (cart.length === 0) {
+            showToast('Agrega al menos un plato para enviar tu pedido', 'receipt');
+            return;
+          }
           const text = buildWhatsappMessage();
           const url = 'https://wa.me/573207600760?text=' + encodeURIComponent(text);
           window.open(url, '_blank', 'noopener,noreferrer');
@@ -1554,7 +1583,7 @@
       document.getElementById('paymentModalTotalLabel').textContent = formatCOP(total);
 
       const subtitleMap = {
-        cuenta: 'Sacar cuenta antes de pedir',
+        cuenta: 'Pide en mesa o saca tu cuenta',
         domicilio: 'Envío a Barrancabermeja',
         recoger: 'Recoger en Local 314'
       };
@@ -1582,19 +1611,19 @@
     function setOrderMode(mode) {
       orderMode = mode;
       const labels = {
-        cuenta: 'Mi Cuenta en el Local',
+        cuenta: 'En Mesa / Mi Cuenta',
         domicilio: 'Pedido a Domicilio',
         recoger: 'Para Recoger en Local'
       };
       const badges = {
-        cuenta: 'Modo: Sacar Cuenta',
+        cuenta: 'Modo: Mi Cuenta / Mesa',
         domicilio: 'Modo: Domicilio',
         recoger: 'Modo: Recoger'
       };
 
       document.getElementById('mobileCartModeLabel').textContent = labels[mode];
       document.querySelectorAll('[data-mode-badge]').forEach(el => el.textContent = badges[mode]);
-      document.getElementById('btnStickyActionText').textContent = mode === 'cuenta' ? 'Ver Cuenta / Pagar' : 'Ver Pedido / Enviar';
+      document.getElementById('btnStickyActionText').textContent = mode === 'cuenta' ? 'Ver Cuenta / Pedir' : 'Ver Pedido / Enviar';
 
       document.querySelectorAll('.mode-btn').forEach(btn => {
         const active = btn.getAttribute('data-mode') === mode;
